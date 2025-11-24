@@ -5,11 +5,13 @@ charset-normalizer==3.4.4
 Django==5.2.8
 et_xmlfile==2.0.0
 filelock==3.20.0
+gunicorn==23.0.0
 idna==3.11
 lxml==6.0.2
 numpy==2.3.4
 oauthlib==3.3.1
 openpyxl==3.1.5
+packaging==25.0
 pandas==2.3.3
 psycopg2-binary==2.9.11
 PySocks==1.7.1
