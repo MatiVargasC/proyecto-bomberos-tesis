@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+
+{% block title %}Iniciar sesión{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-center" style="min-height: calc(100vh - var(--navbar-height)); background: linear-gradient(180deg,#071022 0%, #041029 100%);">
+  <div class="container" style="max-width:420px;padding:24px;">
+    <div class="card p-4">
+      <h1 id="loginTitle">Acceder a tu cuenta</h1>
+      <p class="lead">Introduce tus credenciales para continuar.</p>
+
+      {% if form.errors %}
+      <ul class="errorlist">
+        {% for field in form %}
+          {% for error in field.errors %}
+            <li>{{ error }}</li>
+          {% endfor %}
+        {% endfor %}
+        {% for error in form.non_field_errors %}
+          <li>{{ error }}</li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+
+      <form method="post" action="{% url 'login' %}">
+        {% csrf_token %}
+        <div class="mb-3">
+          <label for="id_username" class="form-label">Usuario o correo</label>
+          {{ form.username }}
+        </div>
+        <div class="mb-3">
+          <label for="id_password" class="form-label">Contraseña</label>
+          {{ form.password }}
+        </div>
+        <button type="submit" class="btn btn-primary w-100">Iniciar sesión</button>
+      </form>
+      <div class="text-center mt-3">
+        <small>¿No tienes cuenta? <a href="{% url 'register' %}">Regístrate</a></small>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

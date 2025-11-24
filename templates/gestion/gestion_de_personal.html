@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+
+{% block title %}Gestión de Personal{% endblock %}
+
+{% block content %}
+<div class="py-4">
+	<div class="d-flex justify-content-between align-items-center mb-4">
+		<h1 class="h3 mb-0">Gestión de Personal</h1>
+			<div>
+				<a href="{% url 'nuevo_bombero' %}" class="btn btn-primary me-2">Nuevo Bombero</a>
+				<a href="{% url 'personal_operativo' %}?dias=3" class="btn btn-outline-info">Personal Operativo</a>
+			</div>
+	</div>
+
+		{# Formulario rápido para asignar guardias a varios bomberos #}
+		<div class="card mb-3">
+			<div class="card-body">
+				<form method="post" action="{% url 'asignar_guardias' %}">
+					{% csrf_token %}
+					<div class="row g-2 align-items-end">
+						<div class="col-md-4">
+							<label class="form-label">Fecha a asignar</label>
+							<input type="date" name="fecha" class="form-control" required>
+						</div>
+						<div class="col-md-6">
+							<label class="form-label">Seleccionar Bomberos</label>
+							<select name="bomberos" multiple class="form-select">
+								{% for b in bomberos %}
+									<option value="{{ b.id }}">{{ b.nombre }} ({{ b.rut }})</option>
+								{% endfor %}
+							</select>
+						</div>
+						<div class="col-md-2">
+							<button class="btn btn-success w-100">Asignar</button>
+						</div>
+					</div>
+				</form>
+			</div>
+		</div>
+
+	<div class="card">
+		<div class="card-body">
+			{% if bomberos %}
+			<div class="table-responsive">
+				<table class="table table-hover">
+					<thead>
+						<tr>
+							<th>#</th>
+							<th>RUT</th>
+							<th>Nombre</th>
+							<th>Rol</th>
+							<th>Usuario</th>
+						</tr>
+					</thead>
+					<tbody>
+						{% for b in bomberos %}
+						<tr>
+							<td>{{ forloop.counter }}</td>
+							<td>{{ b.rut }}</td>
+							<td>{{ b.nombre|default:b.user.username }}</td>
+							<td>{{ b.rol }}</td>
+							<td>{{ b.user.username }}</td>
+						</tr>
+						{% endfor %}
+					</tbody>
+				</table>
+			</div>
+			{% else %}
+				<p class="text-muted">No hay bomberos registrados.</p>
+			{% endif %}
+		</div>
+	</div>
+</div>
+{% endblock %}
+

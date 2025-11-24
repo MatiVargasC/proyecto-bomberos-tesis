@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+
+{% block title %}Editar Guardia{% endblock %}
+
+{% block content %}
+<div class="card shadow-sm border-0">
+    <div class="card-body p-4">
+        <h2 class="h4 mb-4">Editar Guardia - {{ guardia.fecha }} ({{ guardia.bombero.nombre }})</h2>
+
+        <form method="post">
+            {% csrf_token %}
+            <div class="mb-3">
+                {{ form.fecha.label_tag }}
+                {{ form.fecha }}
+            </div>
+            <div class="mb-3">
+                {{ form.tipo.label_tag }}
+                {{ form.tipo }}
+            </div>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    {{ form.hora_inicio.label_tag }}
+                    {{ form.hora_inicio }}
+                </div>
+                <div class="col-md-6 mb-3">
+                    {{ form.hora_fin.label_tag }}
+                    {{ form.hora_fin }}
+                </div>
+            </div>
+            <div class="mb-3">
+                {{ form.herramientas.label_tag }}
+                {{ form.herramientas }}
+            </div>
+            <div class="mb-3">
+                {{ form.apoyo_externo.label_tag }}
+                {{ form.apoyo_externo }}
+            </div>
+            <div class="mb-3">
+                {{ form.lugar.label_tag }}
+                {{ form.lugar }}
+            </div>
+
+            <hr>
+            <h5>Material Mayor (despachado)</h5>
+            <p class="small text-muted">Edite los vehículos y horarios (6-3, 6-9, 6-10). Los campos aceptan ISO datetimes.</p>
+            <table class="table table-sm mb-3">
+                <thead>
+                    <tr><th>Vehículo</th><th>Salida</th><th>6-3 (Llegada)</th><th>6-9 (Retiro)</th><th>6-10 (Llegada cuartel)</th></tr>
+                </thead>
+                <tbody>
+                    {% for m in guardia.materiales.all %}
+                    <tr>
+                        <td>
+                            <input type="hidden" name="material_id" value="{{ m.id }}">
+                            <input type="text" name="material_vehiculo" value="{{ m.vehiculo }}" class="form-control form-control-sm">
+                        </td>
+                        <td><input type="datetime-local" name="material_salida" value="{{ m.llegada|date:'Y-m-d\TH:i' }}" class="form-control form-control-sm"></td>
+                        <td><input type="datetime-local" name="material_llegada" value="{{ m.llegada|date:'Y-m-d\TH:i' }}" class="form-control form-control-sm"></td>
+                        <td><input type="datetime-local" name="material_retiro" value="{{ m.retiro|date:'Y-m-d\TH:i' }}" class="form-control form-control-sm"></td>
+                        <td><input type="datetime-local" name="material_llegada_cuartel" value="{{ m.llegada_cuartel|date:'Y-m-d\TH:i' }}" class="form-control form-control-sm"></td>
+                    </tr>
+                    {% endfor %}
+                    {# filas vacías para nuevos registros #}
+                    {% for i in "123" %}
+                    <tr>
+                        <td><input type="text" name="material_vehiculo" class="form-control form-control-sm" placeholder="Ej: B1"></td>
+                        <td><input type="datetime-local" name="material_salida" class="form-control form-control-sm"></td>
+                        <td><input type="datetime-local" name="material_llegada" class="form-control form-control-sm"></td>
+                        <td><input type="datetime-local" name="material_retiro" class="form-control form-control-sm"></td>
+                        <td><input type="datetime-local" name="material_llegada_cuartel" class="form-control form-control-sm"></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <button class="btn btn-primary" type="submit">Guardar cambios</button>
+            <a class="btn btn-secondary ms-2" href="{% url 'historial' %}">Cancelar</a>
+        </form>
+    </div>
+</div>
+{% endblock %}

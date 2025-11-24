@@ -1,0 +1,4 @@
+﻿bombero_rut,bombero,fecha,hora_inicio,hora_fin,tipo,herramientas,apoyo_externo,lugar
+12345678-9,Manuel Lopez,20/11/2025,19:00,06:00,Nocturna,"Carros,hachas,trajes ignifugos","Carabineros,SAMU",Calle Freire 233
+98765432-1,Miguel Peña,02/11/2025,19:00,06:00,Nocturna,"Carros,hachas,trajes ignifugos",SAMU,Calle Mujica 432
+98745613-2,Alexis Sanchez,03/11/2025,19:00,06:00,Nocturna,"Carros,mangueras, hachas,trajes ignifugos","Carabineros,SAMU",Calle Brasil 665

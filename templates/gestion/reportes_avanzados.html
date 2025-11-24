@@ -1,0 +1,353 @@
+{% extends "base.html" %}
+
+{% block title %}
+    Reportes Avanzados
+{% endblock %}
+
+{% block content %}
+    <div class="row mb-4 align-items-center">
+        <div class="col-md-9">
+            <h1 class="text-secondary fw-bold">
+                <i class="bi bi-file-bar-graph-fill me-2 text-danger"></i>
+                Dashboard de Gestión Avanzada
+            </h1>
+            <p class="text-muted">Vista consolidada de indicadores de gestión, asistencias y disponibilidad del personal.</p>
+        </div>
+        <div class="col-md-3 text-end">
+            <!-- Botón de Filtrado/Exportar -->
+            <button class="btn btn-primary shadow-sm" type="button" data-bs-toggle="offcanvas" data-bs-target="#filtrosOffcanvas" aria-controls="filtrosOffcanvas">
+                <i class="bi bi-funnel-fill me-1"></i> Filtros / Exportar
+            </button>
+        </div>
+    </div>
+    <!-- 1. Tarjetas de Indicadores Clave (KPIs) - moved to top and bound to context -->
+    <div class="row mb-5">
+        <!-- Tarjeta 1: Total de Guardias Creadas -->
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-calendar-check-fill fs-3 text-danger me-3"></i>
+                        <div>
+                            <p class="text-muted mb-0 small">Guardias Creadas (Periodo)</p>
+                            <h2 class="card-title fw-bold">{{ kpi_guardias|default:0 }}</h2>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tarjeta 2: Nivel de Cobertura Promedio -->
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-people-fill fs-3 text-primary me-3"></i>
+                        <div>
+                            <p class="text-muted mb-0 small">Cobertura Promedio</p>
+                            <h2 class="card-title fw-bold">{{ kpi_coverage|default:0 }}<small class="text-primary">%</small></h2>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tarjeta 3: Asistencia de Personal (Periodo) -->
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-person-badge-fill fs-3 text-success me-3"></i>
+                        <div>
+                            <p class="text-muted mb-0 small">Asistencia Total</p>
+                            <h2 class="card-title fw-bold">{{ kpi_hours|default:0 }} <small class="text-success">horas</small></h2>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. Gráficos y Top-5 (colocados debajo de los KPIs y encima de la tabla) -->
+    <div class="row mb-4">
+        <!-- Columna de Gráfico de Asistencia -->
+        <div class="col-lg-7 mb-4">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white fw-bold">
+                    Asistencia Mensual Histórica (Últimos 6 meses)
+                </div>
+                <div class="card-body text-center">
+                    <canvas id="chartGuardias" style="max-width:100%; height:320px"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Columna de Top 5 Bomberos -->
+        <div class="col-lg-5 mb-4">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white fw-bold">
+                    Top 5 Bomberos con más Guardias Realizadas
+                </div>
+                <div class="card-body">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Nombre</th>
+                                <th class="text-end">Guardias</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if top5 %}
+                                {% for item in top5 %}
+                                    <tr>
+                                        <td>{{ forloop.counter }}.</td>
+                                        <td>{{ item.nombre }}</td>
+                                        <td class="text-end">{{ item.count }}</td>
+                                    </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr><td colspan="3" class="text-center text-muted">No hay datos para Top 5 en el periodo seleccionado.</td></tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. Tabla detallada de Guardias (debajo del gráfico y el Top 5) -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white fw-bold">
+                    Detalle de Guardias
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Hora inicio</th>
+                                    <th>Hora fin</th>
+                                    <th>Nombre Bombero</th>
+                                    <th>Rol</th>
+                                    <th>Emergencia</th>
+                                    <th>Tipo de emergencia</th>
+                                    <th>Lugar / Sector</th>
+                                    <th>Material Mayor</th>
+                                    <th>Apoyo externo</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if guardias %}
+                                    {% for g in guardias %}
+                                    <tr>
+                                        <td>{{ g.fecha|date:'j' }} de {{ g.fecha|date:'F' }} de {{ g.fecha|date:'Y' }}</td>
+                                        <td>{{ g.hora_inicio|default_if_none:"N/D" }}</td>
+                                        <td>{{ g.hora_fin|default_if_none:"N/D" }}</td>
+                                        <td>{{ g.nombre }}</td>
+                                        <td>{{ g.rol }}</td>
+                                        <td>{{ g.emergencia }}</td>
+                                        <td>{{ g.tipo_emergencia }}</td>
+                                        <td>{{ g.lugar|default:"N/D" }}</td>
+                                        <td>{{ g.herramientas|default:"N/D" }}</td>
+                                        <td>{{ g.apoyo_externo|default:"N/D" }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr><td colspan="10" class="text-center text-muted">No se encontraron guardias para los filtros seleccionados.</td></tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Offcanvas para Filtros (Aún vacío, pero implementado para el botón) -->
+    <div class="offcanvas offcanvas-end" tabindex="-1" id="filtrosOffcanvas" aria-labelledby="filtrosOffcanvasLabel">
+        <div class="offcanvas-header">
+            <h5 class="offcanvas-title" id="filtrosOffcanvasLabel">Opciones de Filtro y Exportación</h5>
+            <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body">
+            <p class="text-muted">Aquí podrás seleccionar rangos de fecha y descargar los datos en formato CSV para análisis.</p>
+            <form method="get" id="filtrosForm">
+                <div class="mb-3">
+                    <label for="fechaInicio" class="form-label">Fecha de Inicio</label>
+                    <input type="date" class="form-control" id="fechaInicio" name="start" value="{{ request.GET.start }}">
+                </div>
+                <div class="mb-3">
+                    <label for="fechaFin" class="form-label">Fecha de Fin</label>
+                    <input type="date" class="form-control" id="fechaFin" name="end" value="{{ request.GET.end }}">
+                </div>
+                <button type="submit" class="btn btn-danger w-100 mt-3" title="Aplicar filtros al listado y actualizar gráficos"><i class="bi bi-search me-1"></i> Aplicar Filtros</button>
+
+                <hr>
+                <div class="mb-2">
+                    <label class="form-label fw-bold">Columnas para exportar</label>
+                    <div class="small text-muted mb-2">Marca las columnas que quieres incluir en el CSV</div>
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="fecha" id="col_fecha" name="cols" checked>
+                                <label class="form-check-label" for="col_fecha">Fecha</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="hora_inicio" id="col_hora_inicio" name="cols" checked>
+                                <label class="form-check-label" for="col_hora_inicio">Hora inicio</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="hora_fin" id="col_hora_fin" name="cols" checked>
+                                <label class="form-check-label" for="col_hora_fin">Hora fin</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="nombre" id="col_nombre" name="cols" checked>
+                                <label class="form-check-label" for="col_nombre">Nombre Bombero</label>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="rol" id="col_rol" name="cols" checked>
+                                <label class="form-check-label" for="col_rol">Rol Bombero</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="emergencia" id="col_emergencia" name="cols" checked>
+                                <label class="form-check-label" for="col_emergencia">Emergencia (Si/No)</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="tipo_emergencia" id="col_tipo_emergencia" name="cols" checked>
+                                <label class="form-check-label" for="col_tipo_emergencia">Tipo de emergencia</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="lugar" id="col_lugar" name="cols" checked>
+                                <label class="form-check-label" for="col_lugar">Lugar / Sector</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mt-2">
+                        <div class="col-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="material_mayor" id="col_material_mayor" name="cols" checked>
+                                <label class="form-check-label" for="col_material_mayor">Material Mayor</label>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="apoyo_externo" id="col_apoyo" name="cols" checked>
+                                <label class="form-check-label" for="col_apoyo">Apoyo externo</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" name="export" value="csv" class="btn btn-outline-success w-100 mt-2" title="Descargar CSV con los registros filtrados"><i class="bi bi-file-earmark-arrow-down-fill me-1"></i> Exportar a CSV</button>
+            </form>
+
+            <hr>
+            <h6 class="fw-bold">Atributos incluidos en el CSV / Reportes</h6>
+            <p class="text-muted">Los siguientes campos se incluyen para permitir análisis estadísticos y de operación. Algunos campos aún no están modelados y aparecen como 'N/D' en exportaciones.</p>
+            <div class="table-responsive">
+            <table class="table table-sm table-striped">
+                <thead>
+                    <tr>
+                        <th>Atributo</th>
+                        <th>Descripción / Uso</th>
+                        <th>Ejemplo</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Hora de inicio de guardia</strong></td>
+                        <td>Momento en que el bombero registró el inicio de su guardia (hora)</td>
+                        <td>22:30</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Hora de término de guardia</strong></td>
+                        <td>Momento de check-out. Permite calcular duración de la guardia.</td>
+                        <td>06:15</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Nombre Bombero</strong></td>
+                        <td>Identificador del personal asignado a la guardia.</td>
+                        <td>Juan Pérez</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Rol Bombero</strong></td>
+                        <td>Rol o cargo (Bombero, Jefe de Guardia, etc.) para segmentación.</td>
+                        <td>Jefe de Guardia</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Emergencia (Si/No)</strong></td>
+                        <td>Indica si durante la guardia se atendió al menos una emergencia relacionada.</td>
+                        <td>Si</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Material Mayor</strong></td>
+                        <td>Claves de vehículos mayores despachados (ej: B1, BH1, H1). Múltiples separados por `;`.</td>
+                        <td>B1; BH1</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Apoyo externo</strong></td>
+                        <td>Indica si hubo apoyo de otras instituciones (Carabineros, SAMU, etc.). Campo a modelar.</td>
+                        <td>Carabineros</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Tipo de emergencia</strong></td>
+                        <td>Clasificación del siniestro para análisis (incendio, accidente, rescate, etc.).</td>
+                        <td>Incendio Estructural</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Lugar / Sector</strong></td>
+                        <td>Dirección o sector del siniestro para análisis espacial y logística.</td>
+                        <td>Calle 123, Centro</td>
+                    </tr>
+                </tbody>
+            </table>
+            </div>
+    </div>
+
+{% endblock content %}
+
+{% block extra_scripts %}
+<!-- Chart.js desde CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    (function(){
+        // labels y data recibidos desde la vista (JSON seguros escapados)
+        // Usamos escapejs para evitar romper el JavaScript en el editor/cliente
+        var labels = JSON.parse('{{ chart_labels|default:"[]"|escapejs }}');
+        var data = JSON.parse('{{ chart_data|default:"[]"|escapejs }}');
+
+        var ctx = document.getElementById('chartGuardias');
+        if(ctx){
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Guardias creadas',
+                        data: data,
+                        backgroundColor: 'rgba(211,47,47,0.85)',
+                        borderColor: 'rgba(123,10,2,0.9)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, ticks: {precision:0} }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        }
+    })();
+</script>
+{% endblock %}

@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+
+{% block title %}Detalle Guardia{% endblock %}
+
+{% block content %}
+<div class="card shadow-sm">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h3 class="mb-0">Detalle de Guardia - {{ guardia.bombero.nombre }} ({{ guardia.fecha }})</h3>
+      <a href="{% url 'historial' %}" class="btn btn-outline-secondary">Volver</a>
+    </div>
+
+    <div class="row">
+      <div class="col-md-6">
+        <h5>Emergencias atendidas</h5>
+        {% if emergencias %}
+          {% for e in emergencias %}
+            <div class="card mb-2">
+              <div class="card-body">
+                <p><strong>Clave/Tipo:</strong> {{ e.tipo }}</p>
+                <p><strong>Dirección:</strong> {{ e.direccion }}</p>
+                <p><strong>Fecha/Hora:</strong> {{ e.fecha_hora }}</p>
+                {% if e.observaciones %}
+                  <p><strong>Observaciones:</strong> {{ e.observaciones }}</p>
+                {% endif %}
+              </div>
+            </div>
+          {% endfor %}
+        {% else %}
+          <div class="alert alert-light">No se registraron emergencias para esta guardia.</div>
+        {% endif %}
+      </div>
+
+      <div class="col-md-6">
+        <h5>Material Mayor despachado</h5>
+        {% if materiales %}
+          <table class="table table-sm">
+            <thead>
+              <tr>
+                <th>Vehículo</th>
+                <th>Llegada (6-3)</th>
+                <th>Retiro (6-9)</th>
+                <th>Llegada a cuartel (6-10)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for m in materiales %}
+                <tr>
+                  <td>{{ m.vehiculo }}</td>
+                  <td>{{ m.llegada|default:'--' }}</td>
+                  <td>{{ m.retiro|default:'--' }}</td>
+                  <td>{{ m.llegada_cuartel|default:'--' }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% else %}
+          <div class="alert alert-light">Ningún material registrado para esta guardia.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

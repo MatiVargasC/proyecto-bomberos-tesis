@@ -1,0 +1,378 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Inicio - Gestión de Guardias{% endblock %}
+
+{% block content %}
+
+<!-- BOTÓN VIPER - SOLO VISIBLE PARA ADMINISTRADORES -->
+        {% if user.is_staff or user.is_superuser %}
+        <div class="text-center my-4">
+            <a href="{% url 'sincronizar_viper' %}" 
+               class="btn btn-primary btn-lg px-5 py-3 shadow-lg"
+               style="font-size: 1.3rem;">
+                <i class="fas fa-sync-alt"></i>
+                Sincronizar emergencias con VIPER
+            </a>
+            <p class="text-muted mt-3">
+                <small>Última sincronización simulada: {% now "d/m/Y H:i" %}</small>
+            </p>
+        </div>
+        {% endif %}
+
+<div class="mb-5 text-center">
+    {% if bombero %}
+        <h1 class="display-5 fw-bold">Bienvenido, {{ bombero.nombre }}</h1>
+        <p class="lead text-muted">Panel de control de guardias y operatividad del cuartel.</p>
+    {% else %}
+         <h1 class="display-5 fw-bold">Sistema de Gestión de Guardias</h1>
+    {% endif %}
+</div>
+
+<div class="row justify-content-center">
+    
+    {% if error %}
+        <div class="col-lg-8">
+            <div class="card border-danger mb-4 shadow-sm">
+                <div class="card-header bg-danger text-white">
+                    <i class="bi bi-person-fill-exclamation me-2"></i> Error de Asignación
+                </div>
+                <div class="card-body text-center py-5">
+                    <h5 class="card-title text-danger">¡Atención! Perfil No Enlazado</h5>
+                    <p class="card-text text-muted">
+                        Tu cuenta de usuario **no está enlazada** a un perfil de Bombero.
+                        Por favor, contacta a tu administrador para que te asigne un perfil y puedas registrar tus guardias.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+    {% else %}
+
+        <div class="col-lg-6 mb-4">
+            <div class="card text-center shadow-lg border-0 h-100 
+                {% if guardia_abierta %} bg-warning-subtle {% elif guardia_cerrada %} bg-success-subtle {% else %} bg-light {% endif %}">
+                
+                <div class="card-body p-4 d-flex flex-column justify-content-center">
+                    
+                    <h2 class="card-title mb-4 fw-bold">
+                        {% if guardia_abierta %}
+                            <i class="bi bi-clock-history me-2"></i> Guardia en Curso
+                        {% elif guardia_cerrada %}
+                            <i class="bi bi-check-circle-fill me-2"></i> Guardia de Hoy
+                        {% else %}
+                            <i class="bi bi-calendar-check me-2"></i> Registrar Asistencia
+                        {% endif %}
+                    </h2>
+
+                    <form method="POST" class="mt-3">
+                        {% csrf_token %}
+
+                        {% if guardia_abierta %}
+                            <p class="fs-5 text-dark">
+                                <span class="badge bg-warning text-dark me-2">CHECK-IN ACTIVO</span>
+                                Iniciaste tu guardia el **{{ guardia_abierta.fecha|date:"d M" }}** a las **{{ guardia_abierta.hora_inicio|time:"H:i" }}** hrs.
+                            </p>
+                            <button type="submit" name="accion" value="check-out" class="btn btn-danger btn-lg mt-3 shadow-sm">
+                                <i class="bi bi-box-arrow-right me-2"></i> Registrar Salida (Check-out)
+                            </button>
+
+                        {% elif guardia_cerrada %}
+                            <p class="fs-5 text-success">
+                                <span class="badge bg-success me-2">COMPLETADA</span>
+                                ¡Excelente! Ya completaste tu guardia de hoy.
+                            </p>
+                            <p class="text-muted">Horario: {{ guardia_cerrada.hora_inicio|time:"H:i" }} - {{ guardia_cerrada.hora_fin|time:"H:i" }}</p>
+                                <button class="btn btn-outline-success btn-lg mt-3" disabled>
+                                    <i class="bi bi-clipboard-check me-2"></i> Guardia Registrada
+                                </button>
+                                {% if user.is_superuser or user.is_staff %}
+                                    <button type="button" id="adminOpenBtn" class="btn btn-warning btn-lg mt-3 ms-2" data-bs-toggle="modal" data-bs-target="#adminGuardModal">
+                                        <i class="bi bi-plus-square me-2"></i> Registrar nueva guardia (Admin)
+                                    </button>
+                                {% endif %}
+
+                        {% else %}
+                            <p class="fs-5 text-muted">
+                                Estás listo para iniciar tu turno. Recuerda registrar tu salida al finalizar.
+                            </p>
+                            <button type="submit" name="accion" value="check-in" class="btn btn-primary btn-lg mt-3 shadow-sm">
+                                <i class="bi bi-box-arrow-in-right me-2"></i> Registrar Ingreso (Check-in)
+                            </button>
+                        {% endif %}
+
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6 mb-4">
+            <div class="row">
+                <div class="col-md-6 mb-4">
+                    <div class="card shadow-sm border-0 h-100 bg-info-subtle">
+                        <div class="card-body">
+                            <h5 class="card-title text-info"><i class="bi bi-calendar-event me-2"></i> Próxima Guardia</h5>
+                            <p class="card-text">
+                                {% if proxima_guardia %}
+                                    <span class="d-block fw-bold fs-4">{{ proxima_guardia.fecha|date:"l d/m" }}</span>
+                                    <span class="d-block text-muted">Hora: {{ proxima_guardia.hora_inicio|time:"H:i" }} - {{ proxima_guardia.hora_fin|time:"H:i" }}</span>
+                                            {% if proxima_guardia %}
+                                                <div class="small text-muted">Próxima guardia:</div>
+                                                <div class="fw-bold">{{ proxima_guardia.fecha|date:"d M Y" }} — {{ proxima_guardia.bombero.nombre }}</div>
+                                                <div class="small text-muted">Hora: {{ proxima_guardia.hora_inicio|time:"H:i" }} - {{ proxima_guardia.hora_fin|time:"H:i" }}</div>
+                                            {% else %}
+                                                <div class="text-muted">No hay guardias programadas.</div>
+                                            {% endif %}
+                                            <a href="{% url 'reportes_avanzados' %}" class="btn btn-sm btn-info mt-2">Ver Calendario</a>
+                                {% else %}
+                                    <p class="text-muted">No tienes guardias asignadas próximamente.</p>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6 mb-4">
+                    <div class="card shadow-sm border-0 h-100 bg-primary-subtle">
+                        <div class="card-body">
+                            <h5 class="card-title text-primary"><i class="bi bi-person-badge me-2"></i> Personal Operativo</h5>
+                            <p class="card-text">
+                                    <div>
+                                        <span class="d-block fw-bold fs-4 text-primary">{{ personal_operativo }} Bomberos</span>
+                                        <span class="d-block text-muted">Total de personal actualmente con guardia abierta hoy.</span>
+                                    </div>
+                                    {% if personal_operativo_list %}
+                                        <ul class="list-unstyled small mt-2">
+                                            {% for n in personal_operativo_list|slice:5 %}
+                                                <li>{{ n }}</li>
+                                            {% endfor %}
+                                        </ul>
+                                    {% else %}
+                                        <p class="text-muted small mt-2">No hay personal operativo reportado.</p>
+                                    {% endif %}
+                                    <a href="{% url 'gestion_personal' %}" class="btn btn-sm btn-primary mt-2">Ver Detalles</a>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Carrusel estético colocado debajo de las tarjetas principales -->
+        <style>
+            /* Ajustes específicos para el carrusel: tamaño grande y recorte */
+            .home-carousel .carousel-inner { overflow: hidden; border-radius: 8px; }
+            .home-carousel img, .carousel-bg, .carousel-bg-svg { width: 100%; height: 480px; object-fit: cover; display: block; background-size: cover; background-position: center; }
+            .home-carousel .carousel-caption { bottom: 1.25rem; left: 1.25rem; right: auto; text-align: left; }
+            @media (max-width: 767px) { .home-carousel img { height: 220px; } }
+        </style>
+        <div class="container-fluid mt-4 mb-5 px-3">
+            <div id="homeCarousel" class="carousel slide home-carousel" data-bs-ride="carousel" data-bs-interval="4000" data-bs-pause="hover">
+                <div class="carousel-indicators">
+                    <button type="button" data-bs-target="#homeCarousel" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Slide 1"></button>
+                    <button type="button" data-bs-target="#homeCarousel" data-bs-slide-to="1" aria-label="Slide 2"></button>
+                    <button type="button" data-bs-target="#homeCarousel" data-bs-slide-to="2" aria-label="Slide 3"></button>
+                    <button type="button" data-bs-target="#homeCarousel" data-bs-slide-to="3" aria-label="Slide 4"></button>
+                </div>
+                <div class="carousel-inner rounded shadow-sm">
+                    <div class="carousel-item active">
+                        <a href="https://www.gob.cl/noticias/plan-accion-incendios-forestales-2025-2026-prevencion-mitigacion-control/" target="_blank" rel="noopener noreferrer">
+                                <img src="{% static 'images/carousel01.png' %}" alt="Plan de Acción Incendios 2025-2026" style="width:100%; height:480px; object-fit:cover;" loading="lazy">
+                        </a>
+                        <div class="carousel-caption d-none d-md-block text-start bg-dark bg-opacity-25 rounded p-2">
+                            <h5 class="text-white">Plan de Acción Incendios 2025-2026</h5>
+                            <p class="small text-white-50">Prevención, mitigación y control — medidas y recomendaciones.</p>
+                        </div>
+                    </div>
+                    <div class="carousel-item">
+                        <a href="https://corremosporlavida.cl/" target="_blank" rel="noopener noreferrer">
+                                <img src="{% static 'images/carousel02.png' %}" alt="Corremos por la Vida" style="width:100%; height:480px; object-fit:cover;" loading="lazy">
+                        </a>
+                        <div class="carousel-caption d-none d-md-block text-start bg-dark bg-opacity-25 rounded p-2">
+                            <h5 class="text-white">Corremos por la Vida</h5>
+                            <p class="small text-white-50">Iniciativas deportivas para apoyo comunitario y salud.</p>
+                        </div>
+                    </div>
+                    <div class="carousel-item">
+                        <a href="https://primera.cl/donar-bomberos/" target="_blank" rel="noopener noreferrer">
+                                <img src="{% static 'images/carousel03.png' %}" alt="Donación a Bomberos" style="width:100%; height:480px; object-fit:cover;" loading="lazy">
+                        </a>
+                        <div class="carousel-caption d-none d-md-block text-start bg-dark bg-opacity-25 rounded p-2">
+                            <h5 class="text-white">Campaña de Donación</h5>
+                            <p class="small text-white-50">Cómo colaborar con equipo y recursos para el cuartel.</p>
+                        </div>
+                    </div>
+                    <div class="carousel-item">
+                        <a href="https://www.codelco.com/cuerpo-de-bomberos-de-rancagua-contara-con-nueva-sala-multiusos-para" target="_blank" rel="noopener noreferrer">
+                                <img src="{% static 'images/carousel04.png' %}" alt="Nueva sala multiusos (Codelco)" style="width:100%; height:480px; object-fit:cover;" loading="lazy">
+                        </a>
+                        <div class="carousel-caption d-none d-md-block text-start bg-dark bg-opacity-25 rounded p-2">
+                            <h5 class="text-white">Nueva sala multiusos (Codelco)</h5>
+                            <p class="small text-white-50">Mejoras para la formación y trabajo comunitario.</p>
+                        </div>
+                    </div>
+                </div>
+                <button class="carousel-control-prev" type="button" data-bs-target="#homeCarousel" data-bs-slide="prev">
+                    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                    <span class="visually-hidden">Anterior</span>
+                </button>
+                <button class="carousel-control-next" type="button" data-bs-target="#homeCarousel" data-bs-slide="next">
+                    <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                    <span class="visually-hidden">Siguiente</span>
+                </button>
+            </div>
+        </div>
+
+</div>
+
+{% endblock %}
+
+{% if user.is_superuser or user.is_staff %}
+<!-- Modal: Registrar guardia para otro Bombero (Admin) -->
+<div class="modal fade" id="adminGuardModal" tabindex="-1" aria-labelledby="adminGuardModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="adminGuardForm" method="post">
+                {% csrf_token %}
+                <input type="hidden" name="accion" value="admin-check-in-for">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="adminGuardModalLabel">Registrar Guardia (Admin)</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="targetBomberoSelect" class="form-label">Seleccionar Bombero</label>
+                        <select class="form-select" id="targetBomberoSelect" name="target_bombero" required>
+                            {% if bomberos %}
+                                {% for b in bomberos %}
+                                    <option value="{{ b.id }}">{{ b.nombre }} {% if b.rut %}({{ b.rut }}){% endif %}</option>
+                                {% endfor %}
+                            {% else %}
+                                <option disabled>Sin bomberos disponibles</option>
+                            {% endif %}
+                        </select>
+                        <div class="form-text">Selecciona el bombero para quien registrar la guardia.</div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="fechaInput" class="form-label">Fecha</label>
+                            <input type="date" id="fechaInput" name="fecha" class="form-control">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="tipoInput" class="form-label">Tipo</label>
+                            <select id="tipoInput" name="tipo" class="form-select">
+                                <option value="Nocturna">Nocturna</option>
+                                <option value="Diurna">Diurna</option>
+                                <option value="Mixta">Mixta</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="horaInicioInput" class="form-label">Hora inicio</label>
+                            <input type="time" id="horaInicioInput" name="hora_inicio" class="form-control">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="horaFinInput" class="form-label">Hora fin</label>
+                            <input type="time" id="horaFinInput" name="hora_fin" class="form-control">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="materialInput" class="form-label">Material Mayor</label>
+                        <div class="small text-muted mb-2">Ingrese hasta 4 filas con vehículo y horarios (opcional).</div>
+                        <div class="row g-2">
+                            {% for i in "1234" %}
+                            <div class="col-12">
+                                <div class="input-group input-group-sm">
+                                    <input type="text" name="material_vehiculo" class="form-control" placeholder="Vehículo (ej: B1)">
+                                    <input type="datetime-local" name="material_salida" class="form-control" title="Salida">
+                                    <input type="datetime-local" name="material_llegada" class="form-control" title="6-3 llegada">
+                                    <input type="datetime-local" name="material_retiro" class="form-control" title="6-9 retiro">
+                                    <input type="datetime-local" name="material_llegada_cuartel" class="form-control" title="6-10 llegada cuartel">
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <div class="form-text">Rellena los campos para registrar Material Mayor al crear la guardia.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="apoyoInput" class="form-label">Apoyo externo</label>
+                        <input type="text" id="apoyoInput" name="apoyo_externo" class="form-control" placeholder="Ej: Carabineros, SAMU">
+                    </div>
+                    <div class="mb-3">
+                        <label for="lugarInput" class="form-label">Lugar / Sector</label>
+                        <input type="text" id="lugarInput" name="lugar" class="form-control" placeholder="Direccion o sector">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" id="openConfirmBtn" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#confirmAdminGuardModal">Registrar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Confirmación -->
+<div class="modal fade" id="confirmAdminGuardModal" tabindex="-1" aria-labelledby="confirmAdminGuardModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmAdminGuardModalLabel">Confirmar Registro</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                ¿Confirmas crear una nueva guardia para <strong id="confirmBomberoName"></strong>?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-bs-target="#adminGuardModal" data-bs-toggle="modal">Volver</button>
+                <button type="button" id="confirmCreateBtn" class="btn btn-danger">Confirmar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+    var openConfirmBtn = document.getElementById('openConfirmBtn');
+    var confirmCreateBtn = document.getElementById('confirmCreateBtn');
+    var targetSelect = document.getElementById('targetBomberoSelect');
+    var confirmName = document.getElementById('confirmBomberoName');
+    var adminForm = document.getElementById('adminGuardForm');
+
+    if(openConfirmBtn){
+        openConfirmBtn.addEventListener('click', function(){
+            var selected = targetSelect.options[targetSelect.selectedIndex];
+            confirmName.textContent = selected ? selected.text : '';
+        });
+    }
+
+    if(confirmCreateBtn){
+        confirmCreateBtn.addEventListener('click', function(){
+            // submit the admin form
+            if(adminForm) adminForm.submit();
+        });
+    }
+    // Fallback: si el atributo data-bs no abre el modal, forzamos su apertura
+    var adminOpenBtn = document.getElementById('adminOpenBtn');
+    if(adminOpenBtn){
+        adminOpenBtn.addEventListener('click', function(e){
+            try{
+                var modalEl = document.getElementById('adminGuardModal');
+                if(modalEl && window.bootstrap && window.bootstrap.Modal){
+                    var m = new bootstrap.Modal(modalEl);
+                    m.show();
+                }
+            }catch(err){
+                // Silenciar errores; si bootstrap funciona nativamente el data-bs hará el trabajo
+                console.debug('Fallback modal open failed', err);
+            }
+        });
+    }
+});
+</script>
+{% endblock %}
+{% endif %}

@@ -1,0 +1,39 @@
+/* -------------------------------------------------------------------
+   ESTILOS PERSONALIZADOS PARA EL SISTEMA DE GESTIÓN DE GUARDIAS
+   ------------------------------------------------------------------- */
+
+/* 1. Fondo de Pantalla (Gradient Tenue) */
+body {
+    /* Degradado sutil de gris claro a blanco/azul claro */
+    background: linear-gradient(135deg, #f5f7fa 0%, #e6e9f0 100%);
+    min-height: 50vh; /* Asegura que el degradado cubra toda la altura de la ventana */
+     padding-top: 40%;/* Para evitar que el contenido sea cubierto por el navbar fijo */
+}
+
+/* 2. Estilo del Logo/Ícono en el Navbar */
+.navbar-brand-icon {
+    color: #e74c3c; /* Nuestro color Rojo Ladrillo/Bomberos */
+    font-size: 1.5rem; 
+    margin-right: 5px;
+}
+
+/* 3. Estilo de los Enlaces en el Navbar */
+.navbar-nav .nav-link {
+    color: rgba(255, 255, 255, 0.75); /* Blanco semi-transparente para texto */
+    font-weight: 500;
+    transition: all 0.3s ease; /* Transición suave para hover */
+    padding-bottom: 8px !important; /* Espacio para el borde inferior */
+    margin-right: 15px; /* Separación entre links */
+}
+
+/* Efecto Hover y Link Activo */
+.navbar-nav .nav-link:hover,
+.navbar-nav .nav-link.active {
+    color: #ffffff; /* Blanco puro */
+    border-bottom: 3px solid #e74c3c; /* Borde inferior rojo para énfasis */
+}
+
+/* 4. Estilo de la Tarjeta de Contenido Principal */
+.container {
+    padding-top: 35%; /* Separación del navbar */
+}

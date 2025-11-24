@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+
+{% block title %}Mi Perfil{% endblock %}
+
+{% block content %}
+<div class="card shadow-sm">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h3 class="mb-0">Mi Perfil</h3>
+      <a class="btn btn-sm btn-outline-secondary" href="{% url 'password_change' %}">Cambiar contraseña</a>
+    </div>
+
+    <div class="row">
+      <div class="col-md-6">
+        <p><strong>Nombre:</strong>
+          {% if bombero %}
+            {{ bombero.nombre }}
+          {% else %}
+            {{ user.get_full_name|default:user.username }}
+          {% endif %}
+        </p>
+
+        <p><strong>Usuario:</strong> {{ user.username }}</p>
+        <p><strong>Correo:</strong> {{ user.email|default:'—' }}</p>
+        <p><strong>Contraseña:</strong> *******</p>
+      </div>
+
+      <div class="col-md-6">
+        <h6 class="text-muted">Información de Bombero</h6>
+        {% if bombero %}
+          <p><strong>RUT:</strong> {{ bombero.rut }}</p>
+          <p><strong>Rol:</strong> {{ bombero.rol }}</p>
+        {% else %}
+          <p class="text-muted">No hay perfil de Bombero asociado.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
