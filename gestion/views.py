@@ -195,6 +195,17 @@ def index(request):
     }
     return render(request, 'gestion/index.html', contexto)
 
+def registro(request):
+    if request.method == 'POST':
+        form = RegistroBomberoForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            login(request, user)  # Inicia sesión automáticamente
+            return redirect('index')  # o la página que quieras
+    else:
+        form = RegistroBomberoForm()
+    return render(request, 'registration/registro.html', {'form': form})
+
 
 @login_required
 def historial(request):
