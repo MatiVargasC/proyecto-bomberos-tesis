@@ -75,17 +75,22 @@ WSGI_APPLICATION = 'bomberos_project.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'bomberos_rancagua',
-        'USER': 'postgres',
-        'PASSWORD': 'bomberos123',        # <<<<< cambia si usaste otra
-        'HOST': 'localhost',
-        'PORT': '5432',
-    }
-}
+# Database – SIEMPRE usa DATABASE_URL en Render, si no existe usa SQLite local
 
+DATABASE_URL = os.getenv('DATABASE_URL')
+
+if DATABASE_URL:
+    DATABASES = {
+        'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600)
+    }
+else:
+    # Solo para desarrollo local
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 # OPCIONAL pero PRO: para producción futura (Railway, Render, etc.)
 if os.getenv('DATABASE_URL'):
     import dj_database_url
@@ -144,9 +149,5 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
 ALLOWED_HOSTS = ['*']  # Render asigna un dominio dinámico
 
-# Database from Render
-DATABASE_URL = os.getenv('DATABASE_URL')
-if DATABASE_URL:
-    DATABASES['default'] = dj_database_url.parse(DATABASE_URL)
 
 # Static files (CSS, JavaScript, Images)
